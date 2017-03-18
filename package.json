@@ -1,0 +1,30 @@
+{
+  "name": "op-gg-recorder-bot",
+  "version": "1.0.0",
+  "description": "A bot to record LOL gameplays on op.gg",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "async": "^2.1.2",
+    "body-parser": "^1.15.2",
+    "casperjs": "",
+    "commander": "^2.9.0",
+    "express": "^4.14.0",
+    "googleapis": "^14.1.0",
+    "os": "^0.1.1",
+    "pg": "6.1.0",
+    "phantomjs2": "",
+    "phpdate-js": "^1.0.2",
+    "pug": "^2.0.0-beta11",
+    "request": "^2.79.0",
+    "ytdl-core": "^0.7.19"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://git.heroku.com/op-gg-recorder-bot.git"
+  },
+  "author": "",
+  "license": "UNLICENSED"
+}

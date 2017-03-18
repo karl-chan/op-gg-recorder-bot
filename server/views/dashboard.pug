@@ -1,0 +1,97 @@
+doctype html
+html
+    head
+        title Dashboard for op-gg-recorder-bot
+
+        meta(charset="utf-8")
+        meta(name="viewport", content="width=device-width, initial-scale=1, shrink-to-fit=no")
+
+        link(rel="stylesheet", href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css", integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ", crossorigin="anonymous")
+        link(href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css", rel="stylesheet", integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN", crossorigin="anonymous")
+        link(href="https://cdn.datatables.net/1.10.13/css/dataTables.bootstrap4.min.css")
+
+    body
+        // Navbar
+        .navbar.navbar-inverse.bg-inverse
+            .container
+                span.navbar-brand Welcome   
+
+        // Alert
+        if sqlSuccessful
+            .alert.alert-success.alert-dismissible.fade.show(role="alert")
+                i.fa.fa-check
+                |  Succesfully executed query: #{sql} <br> (#{count} rows)
+                button.close(type="button", data-dismiss="alert")
+                    span &times;
+        else if sqlFailure
+            .alert.alert-danger.alert-dismissible.fade.show(role="alert")
+                i.fa.fa-times
+                |  Failed to execute query: #{sql} <br> #{error}
+                button.close(type="button", data-dismiss="alert")
+                    span &times;
+
+        // Jumbotron
+        section.jumbotron.text-center(class=data? 'py-4': '')
+            .container
+                h1.jumbotron-heading Dashboard of op.gg recorder bot
+                p.lead.text-muted Tool to view / edit database entries
+
+                .pt-3
+                form.form
+                    .input-group.px-5.ui-widget
+                        .input-group-addon
+                            i.fa.fa-database
+                        input.form-control.autocomplete(type="text", name="sql" placeholder="Enter database query")
+                        button.ml-3.btn.btn-primary(type="submit") Execute
+
+
+        // Table
+        if data && data.length > 0
+            table#table.table(style="zoom: 0.7")
+                thead
+                    tr
+                        each col in Object.keys(data[0])
+                            th= col
+                tbody
+                    each row in data
+                        tr
+                            each col in Object.keys(row)
+                                td= row[col]
+
+
+        script(src="https://code.jquery.com/jquery-3.1.1.min.js", integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=", crossorigin="anonymous")
+        script(src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js", integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb", crossorigin="anonymous")
+        script(src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js", integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn", crossorigin="anonymous")
+        script(src="https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/4.4.0/bootbox.min.js")
+        script(src="https://cdn.datatables.net/1.10.13/js/jquery.dataTables.min.js")
+        script(src="https://cdn.datatables.net/1.10.13/js/dataTables.bootstrap4.min.js")
+
+        script.
+            $('form').submit((event) => {
+                const sql = $('form input[name="sql"]').val();
+
+                // show confirmation dialog if operation is DELETE
+                if (sql.search(/delete/i) == 0) {
+                    bootbox.confirm({
+                        title: '<i class="fa fa-warning"></i> Are you sure to delete?',
+                        message: sql,
+                        buttons: {
+                            confirm: {
+                                className: 'btn-danger'
+                            }
+                        },
+                        callback: (confirm) => {
+                            if (confirm) {
+                                window.location.href = `${window.location.origin}${window.location.pathname}?sql=${sql}`;
+                            }
+                        }
+                    }).find('.modal-header').addClass('bg-danger text-white');
+                    event.preventDefault();    
+                }
+            });
+
+            $(document).ready(() => {
+                $('#table').DataTable({
+                    aaSorting: []
+                });
+            })
