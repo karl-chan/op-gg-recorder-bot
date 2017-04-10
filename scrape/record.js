@@ -22,13 +22,13 @@ function record(regionCode, userName) {
             casper.log('Refreshed: ' + userName, 'info');
         });
 
-    casper.thenClick('#SpectateButton',
+    casper.thenClick('.SpectateTabButton',
         function clickLiveGameButton() {
             casper.log('Clicked live game button: ' + userName, 'info');
         });
 
     casper.then(function waitForLiveGameStatus() {
-        this.waitForSelector('.Button.SemiRound.Red.tip, .NowRecording.tip, .Message',
+        this.waitForSelector('.Button.SemiRound.Red.tip, .NowRecording.tip, .SpectatorError',
             function recordGame() {
                 if (this.exists('.Button.SemiRound.Red.tip')) {
                     this.click('.Button.SemiRound.Red.tip');
@@ -42,7 +42,7 @@ function record(regionCode, userName) {
             function onTimeout() {
                 this.log('Timed out for: ' + userName, 'info');
             },
-            10000);
+            15000);
     });
 }
 
