@@ -278,7 +278,7 @@ function updateJistVideoUrls() {
                 return isReady;
             }).map(function(jist) {
                 var videoTitle = jist.name;
-                var jistUrl = jist.sourceURL;
+                var token = jist.replay.token;
 
                 var regex = /^(\d+) (.*)$/g;
                 var m = regex.exec(videoTitle);
@@ -288,7 +288,7 @@ function updateJistVideoUrls() {
                 return {
                     'matchId': matchId,
                     'summoner': user,
-                    'jistUrl': jistUrl
+                    'token': token
                 }       
             });
         });
@@ -300,32 +300,60 @@ function updateJistVideoUrls() {
         var recordsToUpdate = getRecordSetDifference(matchesFromJist, savedMatchesWithJist);
 
         // keep only latest records if duplicated
-        var payload = [];
+        var distinctRecords = [];
         recordsToUpdate.forEach(function(match) {
-            for (var i = 0; i < payload.length; i++) {
-                var payloadMatch = payload[i];
-                if (payloadMatch['matchId'] == match['matchId'] 
-                    && payloadMatch['summoner'] == match['summoner']) {
+            for (var i = 0; i < distinctRecords.length; i++) {
+                var r = distinctRecords[i];
+                if (r['matchId'] == match['matchId'] 
+                    && r['summoner'] == match['summoner']) {
                     return;
                 }
             }
-            payload.push(match);
+            distinctRecords.push(match);
         });
 
-        if (payload.length == 0) {
-            casper.log('Exiting: No new jist urls to update.', 'info');
-            return;
-        }
+        // Replace fastplay url with reel url
+        var payload = [];
+        distinctRecords.forEach(function(match) {
+            var token = match['token'];
 
-        // update url for matching id in savedMatches
-        var url = server + '/update';
-        this.thenOpen(url, {
-            method: 'post',
-            headers: {
-                'Content-Type': 'application/json; charset=utf-8'
-            },
-            data: payload
-        });   
+            var detailsUrl = 'http://www.jist.tv/index.php?r=' + token;
+            casper.thenLazyOpen(detailsUrl, function _getReelUrl() {
+                var reel = this.evaluate(function() {
+                    var jists = JSON.parse(document.querySelector('#jists').innerHTML);
+                    for (var i = 0; i < jists.length; i++) {
+                        var jist = jists[i];
+                        if (jist.generator == 'autohlreels') {
+                            return jist;
+                        }
+                    }
+                });
+                if (reel && reel.assets.hd_h264) {
+                    payload.push({
+                        'matchId': match['matchId'],
+                        'summoner': match['summoner'],
+                        'jistUrl': reel.assets.hd_h264
+                    });
+                }
+            });
+        });
+
+        this.then(function _updateJistUrls() {
+            if (payload.length == 0) {
+                casper.log('Exiting: No new jist urls to update.', 'info');
+                return;
+            }
+
+            // update url for matching id in savedMatches
+            var url = server + '/update';
+            this.thenOpen(url, {
+                method: 'post',
+                headers: {
+                    'Content-Type': 'application/json; charset=utf-8'
+                },
+                data: payload
+            });
+        });
     });
 }
 

@@ -28,8 +28,8 @@ google.options({
    @param match match object in json notation
    @return title string */
 function getVideoTitle(match) {
-    /* e.g. [Fastplay] Double Kill | Support | Miss Fortune Gameplay - League of Legends | 20161101 */
-    var title = '[Fastplay] ';
+    /* e.g. (Highlights) Double Kill | Support | Miss Fortune Gameplay - League of Legends | 20161101 */
+    var title = '(Highlights) ';
     if ('multiKill' in match) {
         title += match['multiKill'] + ' | ';
     }
@@ -120,7 +120,7 @@ function downloadMatchFromJist(match, filePath, callback) {
     if (url.includes('youtube')) {
         downloadVideoFromYoutube(url, filePath, callback);
     } else {
-        downloadVideoFromAmazon(url, filePath, callback);
+        downloadVideo(url, filePath, callback);
     }
 }
 
@@ -154,10 +154,10 @@ function downloadVideoFromYoutube(url, filePath, callback) {
     video.pipe(fs.createWriteStream(filePath));
 }
 
-/* Download video hosted on Amazon AWS to file path specified
-   @param url of Amazon AWS video 
+/* Download video hosted at url to file path specified
+   @param url of video
    @param filePath path to save downloaded video */
-function downloadVideoFromAmazon(url, filePath, callback) {
+function downloadVideo(url, filePath, callback) {
     console.log('Started to download from: ' + url);
     var video = request.get(url);
 
