@@ -28,8 +28,8 @@ google.options({
    @param match match object in json notation
    @return title string */
 function getVideoTitle(match) {
-    /* e.g. Double Kill | Support | Miss Fortune Gameplay - League of Legends | 20161101 */
-    var title = '';
+    /* e.g. [Fastplay] Double Kill | Support | Miss Fortune Gameplay - League of Legends | 20161101 */
+    var title = '[Fastplay] ';
     if ('multiKill' in match) {
         title += match['multiKill'] + ' | ';
     }
@@ -117,6 +117,17 @@ function filterMatchesToUpload(callback) {
    @param filePath path to save downloaded video */
 function downloadMatchFromJist(match, filePath, callback) {
     var url = match['jistUrl'];
+    if (url.includes('youtube')) {
+        downloadVideoFromYoutube(url, filePath, callback);
+    } else {
+        downloadVideoFromAmazon(url, filePath, callback);
+    }
+}
+
+/* Download a youtube video to file path specified
+   @param url of youtube video
+   @param filePath path to save downloaded video */
+function downloadVideoFromYoutube(url, filePath, callback) {
     var video = ytdl(url);
     video.on('info', function(info, format) {
         console.log('Started to download from: ' + url);
@@ -124,6 +135,35 @@ function downloadMatchFromJist(match, filePath, callback) {
     var pos = 0,
         size = 0,        
         mB = 1048576;
+    video.on('data', function data(chunk) {
+        size += chunk.length;
+        if (size - pos > 10 * mB) {
+            console.log((size / mB).toFixed(1) + 'MB downloaded from: ' + url);
+            pos = size;
+        }
+    });
+    video.on('error', function() {
+        console.error('Failed to download: ' + url);
+        callback('Failed to download: ' + url);
+        return;
+    });
+    video.on('end', function() {
+        console.log('Download complete: ' + url);
+        callback();
+    });
+    video.pipe(fs.createWriteStream(filePath));
+}
+
+/* Download video hosted on Amazon AWS to file path specified
+   @param url of Amazon AWS video 
+   @param filePath path to save downloaded video */
+function downloadVideoFromAmazon(url, filePath, callback) {
+    console.log('Started to download from: ' + url);
+    var video = request.get(url);
+
+    var pos = 0,
+        size = 0,        
+        mB = 1048576;    
     video.on('data', function data(chunk) {
         size += chunk.length;
         if (size - pos > 10 * mB) {

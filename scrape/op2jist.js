@@ -185,19 +185,18 @@ function convertToJistVideo(regionCode, userName, matchRecords) {
 
         casper.waitForSelector('form#create-opgg-replay', function() {
             var videoTitle = matchId + ' ' + userName;
-
-            this.click('input[name="opgg-view"][value="2"]');
             this.fillSelectors('form#create-opgg-replay', {
                 'input[name="video-title-opgg"]': videoTitle,
-                'select[id="player-list-opgg"]': userName
+                '#player-list-opgg': userName
             });
+
         }, function onTimeout() {
             this.log('Timed out to wait for jist recorder form');
         }, timeout);
 
         casper.thenClick('#create-opgg-button');
 
-        casper.waitForSelector('#create-lol-modal[aria-hidden="true"]', function() {
+        casper.waitForSelector('#successfully-uploaded[aria-hidden="false"]', function() {
             appendNewMatchRecords([matchRecord]);
             this.log('Successfully submitted request for game: ' + matchId + ' ' + userName, 'info');
         }, function onTimeout() {
@@ -235,7 +234,7 @@ function updateJistVideoUrls() {
     var site = 'http://www.jist.tv/index.php';
 
     // open my album on jist.tv
-    casper.thenLazyOpen(site, function() {
+    casper.thenLazyOpen(site, function _openJistAlbum() {
         this.evaluate(function() {
             var hrefs = Array.prototype.slice.call(document.querySelectorAll('a'));
             var myAlbumHref = hrefs.filter(function(a) {
@@ -247,27 +246,27 @@ function updateJistVideoUrls() {
     });
 
     // Reduce the number of available slots if some videos are still being processed on jist.tv
-    casper.then(function() {
+    casper.then(function _reduceAvailableSlots() {
         var numProcessing = this.evaluate(function() {
             var videos = Array.prototype.slice.call(document.querySelectorAll('.uk-panel.uk-panel-box.uk-panel-box-primary.vp-glow.rp-hover'));
             return videos.filter(function(video) {
-                return video.innerHTML.indexOf("We're working on your video.") >= 0 && video.innerHTML.indexOf("Create Jists") == -1;
+                return video.innerHTML.indexOf("We're working on your video.") >= 0;
             }).length;
         });
         maxUploads = numProcessing >= maxUploads? 0: maxUploads - numProcessing;
     });
 
     // scrape all youtube urls and update savedMatches
-    casper.then(function() {
+    casper.then(function _scrapeJistVideoUrls() {
         var matchesFromJist = this.evaluate(function() {
-            var videos = Array.prototype.slice.call(document.querySelectorAll('.uk-panel.uk-panel-box.uk-panel-box-primary.vp-glow.rp-hover'));
-            return videos.filter(function(video) {
-                var isReady = video.querySelector('textarea') != null && video.innerHTML.indexOf("We're working on your video.") == -1;
+            var jists = JSON.parse(document.querySelector('#jists').innerHTML);
+            return jists.filter(function(jist) {
+                var isReady = jist.status == "ready";
 
                 // Also screen out those with invalid video titles
                 try {
-                    var videoTitle = video.querySelector('p').textContent.trim();
-                    var jistUrl = video.querySelector('textarea').textContent.trim();
+                    var videoTitle = jist.name;
+                    var jistUrl = jist.sourceURL;
 
                     var regex = /^(\d+) (.*)$/g;
                     var m = regex.exec(videoTitle);
@@ -276,11 +275,10 @@ function updateJistVideoUrls() {
                 } catch (err) {
                     return false;
                 }
-
                 return isReady;
-            }).map(function(video) {
-                var videoTitle = video.querySelector('p').textContent.trim();
-                var jistUrl = video.querySelector('textarea').textContent.trim();
+            }).map(function(jist) {
+                var videoTitle = jist.name;
+                var jistUrl = jist.sourceURL;
 
                 var regex = /^(\d+) (.*)$/g;
                 var m = regex.exec(videoTitle);
@@ -344,8 +342,11 @@ function sentenceCase(string) {
 var fs = require('fs');
 var casper = require('casper').create({
     verbose: true,
-    logLevel: 'info'
+    logLevel: 'info',
+    clientScripts: ['includes/jist.js']
 });
+casper.userAgent('Mozilla/5.0 (Windows NT 6.2; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36');
+
 var server = 'http://op-gg-recorder-bot.herokuapp.com'; // server address (switch to localhost when debugging)
 var timeout = 30000; // 30 seconds
 var allMode = casper.cli.has('all'); // scrape all matches from beginning of time if --all is passed to command line
@@ -364,11 +365,16 @@ casper.thenLazyOpen = function thenLazyOpen(location, then) {
 };
 
 casper.on('remote.message', function(msg) {
-    this.log('Remote message: ' + msg, 'info');
+    this.log('Remote message: ' + JSON.stringify(msg), 'info');
 })
 casper.on('error', function(err) {
     this.log(JSON.stringify(err), 'error');
     this.exit(-1);
+});
+
+casper.on('page.error', function(msg, trace) {
+    this.log(msg, 'debug');
+    this.log(JSON.stringify(trace), 'debug');
 });
 
 if (allMode) {
