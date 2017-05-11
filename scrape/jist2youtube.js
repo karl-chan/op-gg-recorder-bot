@@ -1,6 +1,6 @@
 "use strict";
-
-var server = 'replace with your server address';
+var system = require('system');
+var server = system.env.SERVER;;
 
 var googleCredentials = require('../data/googleCredentials.json');
 
