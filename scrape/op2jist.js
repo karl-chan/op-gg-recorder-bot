@@ -3,6 +3,7 @@
  * via jist.tv
  */
 
+ 
 function signInJistTV() {
 
     var jistCredentials = require('../data/jistCredentials.json');
@@ -428,31 +429,33 @@ casper.then(function _updateJistVideoUrls() {
     updateJistVideoUrls();
 })
 
+function main(region, user) {
+	casper.then(function _getRecordedMatches() {
+			/* Save result to global variable recordedMatches */
+			getRecordedMatches(region, user, allMode);
+	});
+
+	casper.then(function _getRecordSetDifference() {
+		newMatchRecords = getRecordSetDifference(recordedMatches, savedMatches);
+
+		// truncate to only first n records (--max param)
+		newMatchRecords = sortRecordsAscending(newMatchRecords, true);
+		newMatchRecords = newMatchRecords.slice(0, Math.min(maxUploads, newMatchRecords.length));
+	});
+
+	casper.then(function _convertToJistVideo() {
+		var newMatchRecordsAscending = sortRecordsAscending(newMatchRecords, true)
+		convertToJistVideo(region, user, newMatchRecordsAscending);
+	});
+}
+
 for (var i = 0; i < casper.cli.args.length; i++) {
     var params = casper.cli.get(i).split(':');
     var region = params[0];
     var user = params[1];
-
     var recordedMatches = [];
     var newMatchRecords = [];
-
-    casper.then(function _getRecordedMatches() {
-        /* Save result to global variable recordedMatches */
-        getRecordedMatches(region, user, allMode);
-    });
-
-    casper.then(function _getRecordSetDifference() {
-        newMatchRecords = getRecordSetDifference(recordedMatches, savedMatches);
-
-        // truncate to only first n records (--max param)
-        newMatchRecords = sortRecordsAscending(newMatchRecords, true);
-        newMatchRecords = newMatchRecords.slice(0, Math.min(maxUploads, newMatchRecords.length));
-    });
-
-    casper.then(function _convertToJistVideo() {
-        var newMatchRecordsAscending = sortRecordsAscending(newMatchRecords, true)
-        convertToJistVideo(region, user, newMatchRecordsAscending);
-    });
+	main(region, user);
 }
 
 casper.run();
