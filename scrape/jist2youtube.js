@@ -1,6 +1,6 @@
 "use strict";
-
-var server = process.env.SERVER;;
+var system = require('system');
+var server = system.env.SERVER;;
 
 var googleCredentials = require('../data/googleCredentials.json');
 
