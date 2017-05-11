@@ -1,5 +1,7 @@
 "use strict";
 
+var server = 'replace with your server address';
+
 var googleCredentials = require('../data/googleCredentials.json');
 
 var program = require('commander');
@@ -99,7 +101,7 @@ function getYoutubeUrlFromId(youtubeId) {
    @return callback(newMatches), where newMatches is array of matches in json notation */
 function filterMatchesToUpload(callback) {
     
-    var url = encodeURI('http://op-gg-recorder-bot.herokuapp.com/select?where=jist_url is not null AND youtube_url is null');
+    var url = encodeURI(server + '/select?where=jist_url is not null AND youtube_url is null');
 
     request.get(url, function(err, res) {
         if (err) {
@@ -220,7 +222,7 @@ function uploadMatchToYoutube(match, videoFile, privacyStatus, callback) {
 }
 
 function writeUrlToMatch(youtubeUrl, match, callback) {
-    var url = 'http://op-gg-recorder-bot.herokuapp.com/update';
+    var url = server + '/update';
     
     match['youtubeUrl'] = youtubeUrl;
 

@@ -375,7 +375,7 @@ var casper = require('casper').create({
 });
 casper.userAgent('Mozilla/5.0 (Windows NT 6.2; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36');
 
-var server = 'http://op-gg-recorder-bot.herokuapp.com'; // server address (switch to localhost when debugging)
+var server = 'replace with your server address'; // server address (switch to localhost when debugging)
 var timeout = 30000; // 30 seconds
 var allMode = casper.cli.has('all'); // scrape all matches from beginning of time if --all is passed to command line
 var maxUploads = casper.cli.has('max')? casper.cli.get('max'): Infinity; // set max number of matches to upload to jist.tv
