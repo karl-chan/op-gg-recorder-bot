@@ -121,16 +121,10 @@ function getRecordedMatches(regionCode, userName, getAll) {
         var url_id = 'https://' + regionCode + '.api.pvp.net/api/lol/na/v1.4/summoner/by-name/' + userName + '?api_key=' + apiKey;
                 
         casper.thenLazyOpen(url_id, function _getSummonerId() {
-            casper.evaluate(function() { // error: TypeError: undefined is not an object (evaluating 'JSON.parse(this.getPageContent())' WORKAROUND
-		var json_object = JSON.parse(this.getPageContent());
-		var firstProp;
-		for(var key in json_object) {
-    		    if(json_object.hasOwnProperty(key)) {
-        	        firstProp = json_object[key];
-                        break;
-    		    }
-		}
-		var summonerId = firstProp['id'];
+            casper.evaluate(function() {
+                var summonerJson = JSON.parse(this.getPageContent());
+                var summonerName = Object.keys(summonerJson)[0];
+                var summonerId = summonerJson[summonerName]['id']
                 var lanesLookupMap = {};
 
                 // create lookup map
