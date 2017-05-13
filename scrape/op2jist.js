@@ -2,6 +2,8 @@
  * This class provides functionality to convert recorded gameplays on op.gg to mp4 videos
  * via jist.tv
  */
+ 
+ var system = require('system');
 
 function signInJistTV() {
 
@@ -113,32 +115,35 @@ function getRecordedMatches(regionCode, userName, getAll) {
     });
 
     // Update lane with data from riot API
-    casper.then(function _updateLanes() {
+	casper.then(function _updateLanes() {
 
-        var riotCredentials = require('../data/riotCredentials.json');
-        var apiKey = riotCredentials['api_key'];
+		var riotCredentials = require('../data/riotCredentials.json');
+		var apiKey = riotCredentials['api_key'];
 
-        var url_id = 'https://' + regionCode + '.api.pvp.net/api/lol/na/v1.4/summoner/by-name/' + userName + '?api_key=' + apiKey;
-            
-        casper.thenLazyOpen(url_id, function _getSummonerId() {
-            var summonerId = JSON.parse(this.getPageContent())[userName]['id'];
-            var lanesLookupMap = {};
+		var url_id = 'https://' + regionCode + '.api.pvp.net/api/lol/na/v1.4/summoner/by-name/' + userName + '?api_key=' + apiKey;
+				
+		casper.thenLazyOpen(url_id, function _getSummonerId() {
+			casper.evaluate(function() { // error: TypeError: undefined is not an object (evaluating 'JSON.parse(this.getPageContent())' WORKAROUND
+				var summonerId = JSON.parse(this.getPageContent())[userName]['id'];
+				var lanesLookupMap = {};
 
-            // create lookup map
-            var url_lanes = 'https://' + regionCode + '.api.pvp.net/api/lol/na/v2.2/matchlist/by-summoner/' + summonerId  + '?api_key=' + apiKey;
-            casper.thenLazyOpen(url_lanes, function _getLanes() {
-
-                JSON.parse(this.getPageContent())['matches'].forEach(function(match) {
-                    lanesLookupMap[match['matchId']] = sentenceCase(match['lane']);
-                });
-
-                // update roles
-                recordedMatches.forEach(function(match, i, arr) {
-                    arr[i]['role'] = lanesLookupMap[match['matchId']];
-                });
-            });
-        });        
-    });
+				// create lookup map
+				var url_lanes = 'https://' + regionCode + '.api.pvp.net/api/lol/na/v2.2/matchlist/by-summoner/' + summonerId  + '?api_key=' + apiKey;
+				casper.thenLazyOpen(url_lanes, function _getLanes() {
+					casper.evaluate(function() { // error: TypeError: undefined is not an object (evaluating 'JSON.parse(this.getPageContent())' WORKAROUND
+						JSON.parse(this.getPageContent())['matches'].forEach(function(match) {
+							lanesLookupMap[match['matchId']] = sentenceCase(match['lane']);
+						});
+				
+						// update roles
+						recordedMatches.forEach(function(match, i, arr) {
+							arr[i]['role'] = lanesLookupMap[match['matchId']];
+						});
+					});        
+				});
+			});
+		});
+	});
 }
 
 function getMatchIdsFromRecords(records) {
@@ -375,7 +380,7 @@ var casper = require('casper').create({
 });
 casper.userAgent('Mozilla/5.0 (Windows NT 6.2; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36');
 
-var server = 'replace with your server address'; // server address (switch to localhost when debugging)
+var server = system.env.SERVER; // server address (switch to localhost when debugging)
 var timeout = 30000; // 30 seconds
 var allMode = casper.cli.has('all'); // scrape all matches from beginning of time if --all is passed to command line
 var maxUploads = casper.cli.has('max')? casper.cli.get('max'): Infinity; // set max number of matches to upload to jist.tv
@@ -428,31 +433,33 @@ casper.then(function _updateJistVideoUrls() {
     updateJistVideoUrls();
 })
 
+function main(region, user) {
+	casper.then(function _getRecordedMatches() {
+			/* Save result to global variable recordedMatches */
+			getRecordedMatches(region, user, allMode);
+		});
+
+		casper.then(function _getRecordSetDifference() {
+			newMatchRecords = getRecordSetDifference(recordedMatches, savedMatches);
+
+			// truncate to only first n records (--max param)
+			newMatchRecords = sortRecordsAscending(newMatchRecords, true);
+			newMatchRecords = newMatchRecords.slice(0, Math.min(maxUploads, newMatchRecords.length));
+		});
+
+		casper.then(function _convertToJistVideo() {
+			var newMatchRecordsAscending = sortRecordsAscending(newMatchRecords, true)
+			convertToJistVideo(region, user, newMatchRecordsAscending);
+		});
+}
+
 for (var i = 0; i < casper.cli.args.length; i++) {
     var params = casper.cli.get(i).split(':');
     var region = params[0];
     var user = params[1];
-
     var recordedMatches = [];
     var newMatchRecords = [];
-
-    casper.then(function _getRecordedMatches() {
-        /* Save result to global variable recordedMatches */
-        getRecordedMatches(region, user, allMode);
-    });
-
-    casper.then(function _getRecordSetDifference() {
-        newMatchRecords = getRecordSetDifference(recordedMatches, savedMatches);
-
-        // truncate to only first n records (--max param)
-        newMatchRecords = sortRecordsAscending(newMatchRecords, true);
-        newMatchRecords = newMatchRecords.slice(0, Math.min(maxUploads, newMatchRecords.length));
-    });
-
-    casper.then(function _convertToJistVideo() {
-        var newMatchRecordsAscending = sortRecordsAscending(newMatchRecords, true)
-        convertToJistVideo(region, user, newMatchRecordsAscending);
-    });
+	main(region, user);
 }
-
+	
 casper.run();
