@@ -8,6 +8,10 @@ You will also need a Youtube, Jist.tv and Riot API account.
 
 1. Server
    * We recommend a Heroku server.  The **Procfile** is already set up for you so that the server starts up automatically upon deploy.
+
+   * Configure the environmental variable `SERVER` to point to the origin of your hosted server.  (Credits to [Alerand](https://github.com/Alerand))
+
+     ![](https://i.gyazo.com/3843a41b664243d20bd08b93f7452a4c.png)
    
      If you run on a different hosting service, you will need to run `node server/server.js` to start the server.
 2. Scheduled tasks
