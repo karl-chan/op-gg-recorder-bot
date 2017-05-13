@@ -122,7 +122,12 @@ function getRecordedMatches(regionCode, userName, getAll) {
                 
         casper.thenLazyOpen(url_id, function _getSummonerId() {
             casper.evaluate(function() { // error: TypeError: undefined is not an object (evaluating 'JSON.parse(this.getPageContent())' WORKAROUND
-                var summonerId = JSON.parse(this.getPageContent())[userName]['id'];
+				var json_object = JSON.parse(this.getPageContent());
+				var json_array = [];
+				for(var x in json_object){
+					arr.push(json_object[x]);
+				}
+				var summonerId = json_array[0][1]['id'];
                 var lanesLookupMap = {};
 
                 // create lookup map
