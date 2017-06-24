@@ -121,30 +121,32 @@ function getRecordedMatches(regionCode, userName, getAll) {
         var url_id = 'https://' + regionCode + '.api.pvp.net/api/lol/na/v1.4/summoner/by-name/' + userName + '?api_key=' + apiKey;
                 
         casper.thenLazyOpen(url_id, function _getSummonerId() {
-            casper.evaluate(function() {
-                var summonerJson = JSON.parse(this.getPageContent());
+        	var content = casper.getPageContent(); //Page Content must be out of evaluate
+            casper.evaluate(function() { //Browser Console comands (evaluate)
+                var summonerJson = JSON.parse(content);
                 var summonerName = Object.keys(summonerJson)[0];
                 var summonerId = summonerJson[summonerName]['id']
-                var lanesLookupMap = {};
+            });
+            
+            var lanesLookupMap = {};
 
-                // create lookup map
-                var url_lanes = 'https://' + regionCode + '.api.pvp.net/api/lol/na/v2.2/matchlist/by-summoner/' + summonerId  + '?api_key=' + apiKey;
-                casper.thenLazyOpen(url_lanes, function _getLanes() {
-                    casper.evaluate(function() { // error: TypeError: undefined is not an object (evaluating 'JSON.parse(this.getPageContent())' WORKAROUND
-                        JSON.parse(this.getPageContent())['matches'].forEach(function(match) {
-                            lanesLookupMap[match['matchId']] = sentenceCase(match['lane']);
-                        });
+            // create lookup map
+            var url_lanes = 'https://' + regionCode + '.api.pvp.net/api/lol/na/v2.2/matchlist/by-summoner/' + summonerId  + '?api_key=' + apiKey;
+            casper.thenLazyOpen(url_lanes, function _getLanes() {
+                var content = casper.getPageContent(); //Page Content must be out of evaluate
+                casper.evaluate(function() { //Browser Console comands (evaluate)
+                	JSON.parse(content)['matches'].forEach(function(match) {
+                        lanesLookupMap[match['matchId']] = sentenceCase(match['lane']);
+                	});
+                });
                 
-                        // update roles
-                        recordedMatches.forEach(function(match, i, arr) {
-                            arr[i]['role'] = lanesLookupMap[match['matchId']];
-                        });
-                    });        
+                // update roles
+                recordedMatches.forEach(function(match, i, arr) {
+                    arr[i]['role'] = lanesLookupMap[match['matchId']];
                 });
             });
-        });
-    });
-}
+		});
+    }
 
 function getMatchIdsFromRecords(records) {
     return records.map(function(r) {
