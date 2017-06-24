@@ -122,11 +122,12 @@ function getRecordedMatches(regionCode, userName, getAll) {
                 
         casper.thenLazyOpen(url_id, function _getSummonerId() {
         	var content = casper.getPageContent(); //Page Content must be out of evaluate
-            casper.evaluate(function() { //Browser Console comands (evaluate)
-                var summonerJson = JSON.parse(content);
-                var summonerName = Object.keys(summonerJson)[0];
-                var summonerId = summonerJson[summonerName]['id']
-            });
+			var summonerId;
+			casper.evaluate(function() { //Browser Console comands (evaluate)
+				var summonerJson = JSON.parse(content);
+				var summonerName = Object.keys(summonerJson)[0];
+				summonerId = summonerJson[summonerName]['id']
+			});
             
             var lanesLookupMap = {};
 
@@ -136,8 +137,8 @@ function getRecordedMatches(regionCode, userName, getAll) {
                 var content = casper.getPageContent(); //Page Content must be out of evaluate
                 casper.evaluate(function() { //Browser Console comands (evaluate)
                 	JSON.parse(content)['matches'].forEach(function(match) {
-                        lanesLookupMap[match['matchId']] = sentenceCase(match['lane']);
-                	});
+                    	lanesLookupMap[match['matchId']] = sentenceCase(match['lane']);
+                    });
                 });
                 
                 // update roles
